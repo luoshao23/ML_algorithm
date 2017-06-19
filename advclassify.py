@@ -1,3 +1,4 @@
+import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -86,31 +87,77 @@ def matchcount(interest1, interest2):
             x += 1
     return x
 
+
 def milesdistance(a1, a2):
     return 0
+
 
 def loadnumerical():
     oldrows = loadmatch('matchmaker.csv')
     newrows = []
     for row in oldrows:
         d = row.data
-        data = [float(d[0]), yesno(d[1]), yesno(d[2]),float(d[5]), yesno(d[6]),yesno(d[7]),matchcount(d[3],d[8]),milesdistance(d[4],d[9]),row.match]
+        data = [float(d[0]), yesno(d[1]), yesno(d[2]), float(d[5]), yesno(d[6]), yesno(
+            d[7]), matchcount(d[3], d[8]), milesdistance(d[4], d[9]), row.match]
         newrows.append(matchrow(data))
     return newrows
 
+
 def scaledata(rows):
-    low = [99999999.0]*len(rows[0].data)
-    high = [-99999999.0]*len(rows[0].data)
+    low = [99999999.0] * len(rows[0].data)
+    high = [-99999999.0] * len(rows[0].data)
 
     for row in rows:
         d = row.data
         for i in xrange(len(d)):
-            if d[i]<low[i]: low[i] = d[i]
-            if d[i]>high[i]: high[i] = d[i]
+            if d[i] < low[i]:
+                low[i] = d[i]
+            if d[i] > high[i]:
+                high[i] = d[i]
 
     def scaleinput(d):
-        return [(d.data[i]-low[i])/(high[i] - low[i]) for i in xrange(len(low))]
+        return [(d[i] - low[i]) / (high[i] - low[i]) if high[i] - low[i] != 0 else 0 for i in xrange(len(low))]
 
-    newrows = [matchrow(scaleinput(row.data)+[row.match]) for row in rows]
+    newrows = [matchrow(scaleinput(row.data) + [row.match]) for row in rows]
 
     return newrows, scaleinput
+
+
+def rbf(v1, v2, gamma=20):
+    dv = [v1[i] - v2[i] for i in xrange(len(v1))]
+    l = dotproduct(dv, dv)
+    return math.exp(-gamma * l)
+
+
+def nlclassify(point, rows, offset, gamma=10):
+    sum0 = 0.0
+    sum1 = 0.0
+    count0 = 0
+    count1 = 0
+
+    for row in rows:
+        if row.match == 0:
+            sum0 += rbf(point, row.data, gamma)
+            count0 += 1
+        else:
+            sum1 += rbf(point, row.data, gamma)
+            count1 += 1
+    y = (1.0 / count0) * sum0 - (1.0 / count1) * sum1 + offset
+
+    if y > 0:
+        return 0
+    else:
+        return 1
+
+def getoffset(rows, gamma=10):
+    l0 = []
+    l1 = []
+    for row in rows:
+        if row.match == 0:
+            l0.append(row.data)
+        else:
+            l1.append(row.data)
+    sum0=sum(sum([rbf(v1,v2,gamma) for v1 in l0]) for v2 in l0)
+    sum1=sum(sum([rbf(v1,v2,gamma) for v1 in l1]) for v2 in l1)
+
+    return (1.0/(len(l1)**2))*sum1-(1.0/(len(l0)**2))*sum0
