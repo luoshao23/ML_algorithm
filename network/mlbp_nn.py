@@ -1,4 +1,9 @@
 import numpy as np
+from sklearn.utils import check_random_state
+from _base import ACTIVATIONS, DERIVATIVES
+
+
+_SOLVER = ['sgd']
 
 
 def sigmoid(x):
@@ -26,10 +31,11 @@ class mynn(object):
     learning_rules = {'const': lambda x, it: x,
                       'expo': lambda x, it: x * np.exp()}
 
-    def __init__(self, learning_rate_init=0.03, learning_rule='const', lamb=0.0, max_iter=200,
-        num_hidden_nodes=[100], num_hidden_layers=1, momentum=0.9, beta=0.0, ro0=0.05, shuffle=True):
+    def __init__(self, activation='logistic', learning_rate_init=0.03, learning_rule='const', lamb=0.0, max_iter=200,
+                 num_hidden_nodes=[100], num_hidden_layers=1, momentum=0.9, beta=0.0, ro0=0.05, shuffle=True, random_state=None):
 
-        self.nonlinear = (sigmoid, dsigmoid)
+        # self.nonlinear = (sigmoid, dsigmoid)
+        self.activation = activation
         self.learning_rate_init = learning_rate_init
         self.lamb = lamb
         self.momentum = momentum
@@ -44,39 +50,55 @@ class mynn(object):
         self.num_hidden_nodes = num_hidden_nodes
         self.num_hidden_layers = num_hidden_layers
         self.layers_ = num_hidden_layers + 2
+        self._random_state = check_random_state(random_state)
 
         self.ww = None
         self.th = None
         self.predict_ = None
 
     def init_param(self, nodes_list):
-        self.ww = [np.random.uniform(-.05, .05, (nodes_list[i], nodes_list[i + 1]))
-                   for i in xrange(self.layers_ - 1)]
-        # print self.ww[0].shape, self.ww
-        self.th = [np.random.uniform(-.05, .05, (nodes_list[i + 1],))
-                   for i in xrange(self.layers_ - 1)]
+        if self.activation == 'logistic':
+            init_bound = lambda inb, outb: np.sqrt(2. / (inb + outb))
+        else:
+            init_bound = lambda inb, outb: np.sqrt(6. / (inb + outb))
 
-        self.dww = [np.zeros((nodes_list[i], nodes_list[i + 1]))
-                    for i in xrange(self.layers_ - 1)]
-
-        self.dww_last = [np.zeros((nodes_list[i], nodes_list[i + 1]))
-                         for i in xrange(self.layers_ - 1)]
-
-        self.dth = [np.zeros((nodes_list[i + 1],))
-                    for i in xrange(self.layers_ - 1)]
-
-        self.z = [np.zeros((nodes_list[i + 1],))
-                  for i in xrange(self.layers_ - 1)]
-
-        self.a = [np.zeros((nodes_list[i + 1],))
-                  for i in xrange(self.layers_ - 1)]
-        self.ro = [np.zeros((nodes_list[i + 1],))
+        self.ww = [self._random_state.uniform(-init_bound(nodes_list[i], nodes_list[i + 1]), init_bound(nodes_list[i], nodes_list[i + 1]), (nodes_list[i], nodes_list[i + 1]))
                    for i in xrange(self.layers_ - 1)]
 
-        self.delta = [np.zeros((nodes_list[i + 1],))
-                      for i in xrange(self.layers_ - 1)]
+        self.th = [self._random_state.uniform(-init_bound(nodes_list[i], nodes_list[i + 1]), init_bound(nodes_list[i], nodes_list[i + 1]), (nodes_list[i + 1],))
+                   for i in xrange(self.layers_ - 1)]
+
+        self.dww = [np.empty_like(w) for w in self.ww]
+
+        self.dww_last = [np.empty_like(w) for w in self.ww]
+
+        self.dth = [np.empty_like(th) for th in self.th]
+
+        self.z = [np.empty_like(th) for th in self.th]
+
+        self.a = [np.empty_like(th) for th in self.th]
+
+        self.ro = [np.empty_like(th) for th in self.th]
+
+        self.delta = [np.empty_like(th) for th in self.th]
+
+    def _forward_pass(self, activations):
+        hidden_activation = ACTIVATIONS[self.activation]
+        for layer in xrange(self.layers_ - 1):
+            activations[
+                layer + 1] = np.dot(activations[layer], self.ww[layer]) + self.th[layer]
+            if (layer + 1) != (self.layers_ - 1):
+                activations[
+                    layer + 1] = hidden_activation(activations[layer + 1])
+            else:
+                out_activation = ACTIVATIONS[self.out_activation_]
+                activations[layer + 1] = out_activation(activations[layer + 1])
+
+        return activations
 
     def fit(self, records, results):
+        hidden_activation = ACTIVATIONS[self.activation]
+        inplace_derivative = DERIVATIVES[self.activation]
 
         num_input, self.num_input_nodes = records.shape
         num_res, self.num_res_nodes = results.shape
@@ -103,12 +125,13 @@ class mynn(object):
                     if layer == 0:
                         self.z[layer] = np.dot(self.input_[i], self.ww[
                                                layer]) + self.th[layer]
-                        self.a[layer] = self.nonlinear[0](self.z[layer])
-                        self.ro[layer] = np.mean(self.input_[i]) * self.a[layer]
+                        self.a[layer] = hidden_activation(self.z[layer])
+                        self.ro[layer] = np.mean(
+                            self.input_[i]) * self.a[layer]
                     else:
                         self.z[layer] = np.dot(
                             self.a[layer - 1], self.ww[layer]) + self.th[layer]
-                        self.a[layer] = self.nonlinear[0](self.z[layer])
+                        self.a[layer] = hidden_activation(self.z[layer])
                         self.ro[layer] = np.mean(
                             self.a[layer - 1]) * self.a[layer]
                     # print self.ro[layer]
@@ -116,12 +139,14 @@ class mynn(object):
                 for rlayer in xrange(self.layers_ - 2, -1, -1):
                     if rlayer == self.layers_ - 2:
                         self.delta[
-                            rlayer] = (-(self.target_[i] - self.a[rlayer]) + self.beta * (-self.ro0 / self.ro[
-                                rlayer] + (1 - self.ro0) / (1 - self.ro[rlayer]))) * self.nonlinear[1](self.z[rlayer])
+                            rlayer] = (-(self.target_[i] - self.a[rlayer]))
 
                     else:
-                        self.delta[rlayer] = (np.dot(self.ww[rlayer + 1], self.delta[rlayer + 1]) + self.beta * (-self.ro0 / self.ro[
-                                              rlayer] + (1 - self.ro0) / (1 - self.ro[rlayer]))) * self.nonlinear[1](self.z[rlayer])
+                        self.delta[rlayer] = (
+                            np.dot(self.ww[rlayer + 1], self.delta[rlayer + 1]))
+                    inplace_derivative(self.z[rlayer], self.delta[rlayer])
+                    # + self.beta * (-self.ro0 / self.ro[
+                    # rlayer] + (1 - self.ro0) / (1 - self.ro[rlayer]))
 
                     if rlayer != 0:
                         self.dww[
@@ -150,15 +175,16 @@ class mynn(object):
                 break
 
     def predict(self, records):
+        hidden_activation = ACTIVATIONS[self.activation]
         for layer in xrange(self.layers_ - 1):
             if layer == 0:
-                self.predict_ = self.nonlinear[0](
+                self.predict_ = hidden_activation(
                     np.dot(records, self.ww[layer]) + self.th[layer])
             else:
-                self.predict_ = self.nonlinear[0](
+                self.predict_ = hidden_activation(
                     np.dot(self.predict_, self.ww[layer]) + self.th[layer])
         # return (np.sign(self.predict_ - 0.5) + 1) / 2
-        return (self.predict_ > 0.5) + 0.0
+        return self.predict_
 
 
 def test():
