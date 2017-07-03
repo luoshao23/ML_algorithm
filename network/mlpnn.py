@@ -6,7 +6,7 @@ from _base import ACTIVATIONS, DERIVATIVES
 class mynn(object):
     """docstring for mynn"""
 
-    def __init__(self, activation='logistic', learning_rate_init=0.03, learning_rule='const', lamb=0.0, max_iter=200,
+    def __init__(self, activation='relu', learning_rate_init=0.001, learning_rule='const', lamb=0.0, max_iter=200,
                  num_hidden_nodes=[8], num_hidden_layers=1, momentum=0.9, beta=0.0, ro0=0.05, shuffle=True, batch_size="auto", random_state=None):
 
         # self.nonlinear = (sigmoid, dsigmoid)
@@ -27,7 +27,7 @@ class mynn(object):
 
         self.ww = None
         self.th = None
-        self.predict_ = None
+
 
     def init_param(self, nodes_list):
         self.out_activation_ = 'identity'
@@ -59,8 +59,9 @@ class mynn(object):
     def _forward_pass(self, activations):
         hidden_activation = ACTIVATIONS[self.activation]
         for layer in xrange(self.n_layers_ - 1):
-            activations[
-                layer + 1] = np.dot(activations[layer], self.ww[layer]) + self.th[layer]
+            activations[layer + 1] = np.dot(activations[layer], self.ww[layer])
+            activations[layer + 1] += self.th[layer]
+
             if (layer + 1) != (self.n_layers_ - 1):
                 activations[
                     layer + 1] = hidden_activation(activations[layer + 1])
@@ -150,16 +151,20 @@ class mynn(object):
 
 
 def test():
-    # records = np.random.randint(0, 2, (20, 6))
-    # results = np.random.randint(0, 2, (20, 3))
-    records = np.eye(6)
-    results = records
+    from sklearn.neural_network import MLPClassifier
+    records = np.random.randint(0, 2, (10, 6))
+    results = np.random.randint(0, 2, (10, 3))
+    # records = np.eye(6)
+    # results = records
 
     nn = mynn()
+    nn2 = MLPClassifier()
 
-    a = nn._fit(records, results)
+    nn._fit(records, results)
+    nn2.fit(records, results)
     print results
     print nn._predict(records)
+    print nn2.predict(records)
     # print nn.ww
 
     # print results
