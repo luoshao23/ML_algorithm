@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.utils import check_random_state, gen_batches
-from _base import ACTIVATIONS, DERIVATIVES
+from scipy.special import expit as logistic_sigmoid
+import warnings
+from _base import ACTIVATIONS, DERIVATIVES, LOSS_FUNCTIONS
 
 
 class mynn(object):
