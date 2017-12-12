@@ -1,0 +1,16 @@
+digraph G{
+node [shape = record,height=.1];
+id_1[label="<fb> |<col> col:V_FS_TRIP_P75\nsize:19998\nF1:-0.18466456484|<tb> "];
+"id_1":fb -> "id_3":col;
+"id_1":tb -> "id_2":col;
+id_2[label="<fb> |<col> col:V_BS_LIFT_L12M_P50\nsize:16689\nF1:0.0804253839415|<tb> "];
+"id_2":fb -> "id_5":col;
+"id_2":tb -> "id_4":col;
+id_4[label="<fb> |<col> size:9687\nF1:-0.349227827589|<tb> "];
+id_5[label="<fb> |<col> col:V_MARGIN_RATE_L12M_P75\nsize:7002\nF1:0.664989720765|<tb> "];
+"id_5":fb -> "id_11":col;
+"id_5":tb -> "id_10":col;
+id_10[label="<fb> |<col> size:4538\nF1:0.27125653818|<tb> "];
+id_11[label="<fb> |<col> size:2464\nF1:1.3986009758|<tb> "];
+id_3[label="<fb> |<col> size:3309\nF1:-1.50893472769|<tb> "];
+}
