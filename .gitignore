@@ -5,3 +5,5 @@
 *.egg-info
 .*/
 __*/
+*.csv
+*.jpg
