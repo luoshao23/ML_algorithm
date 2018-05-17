@@ -4,6 +4,9 @@ from inspect import signature
 
 
 class BaseEstimator(object):
+    """
+    base class for estimator
+    """
 
     @classmethod
     def _get_param_names(cls):

@@ -1,7 +1,7 @@
 from collections import Sequence
-from scipy.sparse.base import spmatrix
 
 import numpy as np
+from scipy.sparse.base import spmatrix
 
 from ..externals.six import string_types
 
