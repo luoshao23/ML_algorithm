@@ -11,4 +11,4 @@ tf.logging.set_verbosity(tf.logging.INFO)
 # Our application logic will be added here
 
 if __name__ == "__main__":
-	tf.app.run()
+    tf.app.run()
