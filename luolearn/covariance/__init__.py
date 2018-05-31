@@ -1,1 +1,2 @@
 from .empirical_covariance_ import empirical_covariance
+from .shrunk_covariance_ import ledoit_wolf

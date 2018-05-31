@@ -1,7 +1,10 @@
 import warnings
 
 import numpy as np
+from scipy import linalg
 from sklearn.preprocessing import StandardScaler
+from .covariance import ledoit_wolf, empirical_covariance
+
 
 from .externals.six import string_types
 from .utils import check_X_y
@@ -38,7 +41,7 @@ def _class_cov(X, y, priors=None, shrinkage=None):
     for g in classes:
         Xg = X[y == g, :]
         covs.append(np.atleast_2d(_cov(Xg, shrinkage)))
-    return np.asarray(means)
+    return np.average(covs, axis=0, weights=priors)
 
 
 class LinearDiscriminantAnalysis(object):
@@ -54,12 +57,45 @@ class LinearDiscriminantAnalysis(object):
     def _solve_lsqr(self, X, y, shrinkage):
         self.means_ = _class_means(X, y)
         self.covariance_ = _class_cov(X, y, self.priors_, shrinkage)
-        self.coef_ = []
-        self.intercept_ = []
+        self.coef_ = linalg.lstsq(self.covariance_, self.means_.T)[0].T
+        self.intercept_ = (-0.5 * np.diag(np.dot(
+            self.means_, self.coef_.T)) + np.log(self.priors_))
 
     def _solve_svd(self, X, y):
         n_sapmles, n_features = X.shape
         n_classes = len(self.classes_)
+        self.means_ = _class_means(X, y)
+
+        if self.store_covariance:
+            self.covariance_ = _class_cov(X, y, self.priors_)
+
+        Xc = []
+        for idx, group in enumerate(self.classes_):
+            Xg = X[y == group, :]
+            Xc.append(Xg - self.means_[idx])
+
+        self.xbar_ = np.dot(self.priors_, self.means_)
+        Xc = np.concatenate(Xc, axis=0)
+
+        std = Xc.std(axis=0)
+
+        std[std == 0] = 1.
+        fac = 1. / (n_sapmles - n_classes)
+
+        X = np.sqrt(fac) * (Xc / std)
+
+        U, S, V = linalg.svd(X, full_matrices=False)
+
+        rank = np.sum(S > self.tol)
+        if rank < n_features:
+            warnings.warn("Variable are collinear.")
+
+        scalings = (V[:rank] / std).T / S[:rank]
+
+        X = np.dot(((np.sqrt((n_samples * self.priors_) * fac)) *
+                    (self.means_ - self.xbar_).T).T, scalings)
+
+        _, S, V = linalg.svd(X, full_matrices=0)
 
     def fit(self, X, y):
         X, y = check_X_y(X, y)

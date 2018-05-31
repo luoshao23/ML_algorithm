@@ -15,3 +15,7 @@ def empirical_covariance(X, assume_centered=False):
         covariance = np.dot(X.T, X) / X.shape[0]
     else:
         covariance = np.cov(X.T, bias=True)
+
+    if covariance.ndim == 0:
+        covariance = np.array([[covariance]])
+    return covariance
