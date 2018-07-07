@@ -11,14 +11,6 @@ class Graph(object):
         self.nodes = {}
         if edges:
             self.add_edges_from(edges)
-            # for edge in edges:
-            #     edge = tuple(set(edge))
-            #     self.edges[edge] = {}
-            #     p, q = edge
-            #     self.nodes[p] = {}
-            #     self.nodes[q] = {}
-            #     self.adj[p][q] = {}
-            #     self.adj[q][p] = {}
 
     def __getitem__(self, key):
         return self.adj[key]
@@ -35,23 +27,33 @@ class Graph(object):
         for node in nodes:
             self.add_node(node)
 
-    def add_edge(self, *edge):
-        if len(edge) <= 1:
-            raise TypeError('at least 2 arguments!')
-        edge = tuple(set(edge))
-        self.add_nodes_from(edge)
-        if len(edge) == 2:
+    def add_edge(self, u, v, **attr):
+        """
+        edge(u,v) is u->v, which stores v as u's adjacency.
+        """
+        self.add_nodes_from((u, v))
+        self.edges[(u, v)] = {}
+        dictdata = self.adj[u].get(v, {})
+        dictdata.update(attr)
+        self.adj[u][v] = dictdata
+        self.adj[v][u] = dictdata
 
-            self.edges[edge] = {}
-
-            p, q = edge
-            self.adj[p][q] = {}
-            self.adj[q][p] = {}
-
-    def add_edges_from(self, edges):
-
+    def add_edges_from(self, edges, **attr):
+        """
+        the attr in edges is private for one edge, while `attr` is public for all edges added in this time.
+        """
         for edge in edges:
-            self.add_edge(*edge)
+            ne = len(edge)
+            if ne == 3:
+                u, v, dd = edge
+            elif ne == 2:
+                u, v = edge
+                dd = {}
+            else:
+                raise ValueError(
+                    "Edge tuple %s must be a 2-tuple or 3-tuple." % (edge,))
+            dd.update(attr)
+            self.add_edge(u, v, **dd)
 
 
 class DiGraph(Graph):
@@ -77,22 +79,35 @@ class DiGraph(Graph):
         for node in nodes:
             self.add_node(node)
 
-    def add_edge(self, *edge, **attr):
+    def add_edge(self, u, v, **attr):
         """
         edge(u,v) is u->v, which stores v as u's adjacency.
         """
-        if len(edge) <= 1:
-            raise TypeError('at least 2 arguments!')
+        self.add_nodes_from((u, v))
+        self.edges[(u, v)] = {}
+        dictdata = self.adj[u].get(v, {})
+        dictdata.update(attr)
+        self.adj[u][v] = dictdata
 
-        self.add_nodes_from(edge)
-        if len(edge) == 2:
-            self.edges[edge] = {}
-            p, q = edge
-            self.adj[p][q] = {}
-
-    def add_edges_from(self, edges):
+    def add_edges_from(self, edges, **attr):
+        """
+        the attr in edges is private for one edge, while `attr` is public for all edges added in this time.
+        """
         for edge in edges:
-            self.add_edge(*edge)
+            ne = len(edge)
+            if ne == 3:
+                u, v, dd = edge
+            elif ne == 2:
+                u, v = edge
+                dd = {}
+            else:
+                raise ValueError(
+                    "Edge tuple %s must be a 2-tuple or 3-tuple." % (edge,))
+            dd.update(attr)
+            self.add_edge(u, v, **dd)
+
+    def add_weighted_edges_from(self, edges, weight='weight', **attr):
+        self.add_edges_from(((u, v, {weight: d}) for u, v, d in edges), **attr)
 
     @property
     def in_degree(self):
