@@ -34,3 +34,14 @@ def matrix_to_lists(doc_word):
 
     return WS, DS
 
+
+def lists_to_matrix(WS, DS):
+    D = max(DS) + 1
+    V = max(WS) + 1
+
+    doc_word = np.zeros((D, V), dtype=np.intc)
+    indices, counts = np.unique(list(zip(DS, WS)), axis=0, return_counts=True)
+    doc_word[indices[:, 0], indices[:, 1]] += counts
+
+    return doc_word
+
