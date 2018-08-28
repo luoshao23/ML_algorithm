@@ -1,10 +1,11 @@
+from __future__ import absolute_import
 import numpy as np
-
+from numbers import Integral
 
 def check_random_state(seed):
     if seed is None:
         return np.random.mtrand._rand
-    if isinstance(seed, np.integer):
+    if isinstance(seed, (np.integer, Integral)):
         return np.random.RandomState(seed)
     if isinstance(seed, np.random.RandomState):
         return seed

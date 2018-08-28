@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import numpy as np
 
 import llda.utils
+import llda._lda
 
 
 class LDA(object):
@@ -36,7 +38,10 @@ class LDA(object):
         pass
 
     def fit_transform(self, X, y=None):
-        pass
+        if isinstance(X, np.ndarray):
+            X = np.atleast_2d(X)
+        self._fit(X)
+        return self.doc_topic_
 
     def _fit(self, X):
         random_state = llda.utils.check_random_state(self.random_state)
@@ -48,7 +53,18 @@ class LDA(object):
             if it % self.refresh == 0:
                 ll = self.loglikelihood()
                 self.loglikelihoods_.append(ll)
+            self._sample_topics(rands)
+        ll = self.loglikelihood()
+        self.components_ = (self.nzw_ + self.eta).astype(float)
+        self.components_ /= np.sum(self.components_, axis=1, keepdims=True)
+        self.topic_word_ = self.components_
+        self.doc_topic_ = (self.ndz_ + self.alpha).astype(float)
+        self.doc_topic_ /= np.sum(self.doc_topic_, axis=1, keepdims=True)
 
+        del self.WS
+        del self.DS
+        del self.ZS
+        return self
 
     def _initialize(self, X):
         D, W = X.shape
@@ -78,4 +94,10 @@ class LDA(object):
         eta = self.eta
         nd = np.sum(ndz, axis=1).astype(np.intc)
         return llda._lda._loglikelihood(nzw, ndz, nz, nd, alpha, eta)
+
+    def _sample_topics(self, rands):
+        n_topics, vocab_size = self.nzw_.shape
+        alpha = np.repeat(self.alpha, n_topics).astype(np.float64)
+        eta = np.repeat(self.eta, vocab_size).astype(np.float64)
+        llda._lda._sample_topics(self.WS, self.DS, self.ZS, self.nzw_, self.ndz_, self.nz_, alpha, eta, rands)
 
