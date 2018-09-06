@@ -44,13 +44,16 @@ class LDA(object):
         return self.doc_topic_
 
     def _fit(self, X):
+        # check random state
         random_state = llda.utils.check_random_state(self.random_state)
         rands = self._rands.copy()
+        # generate the initial distribution for Mdz, Mzw and Az
         self._initialize(X)
         for it in range(self.n_iter):
             # FIXME: using numpy.roll with a random shift might be faster
             random_state.shuffle(rands)
             if it % self.refresh == 0:
+                # calculate the loglikelihood
                 ll = self.loglikelihood()
                 self.loglikelihoods_.append(ll)
             self._sample_topics(rands)
@@ -72,13 +75,18 @@ class LDA(object):
         n_topics = self.n_topics
         n_iter = self.n_iter
 
+        # topics - word matrix
         self.nzw_ = nzw_ = np.zeros((n_topics, W), dtype=np.intc)
+        # document - topics matrix
         self.ndz_ = ndz_ = np.zeros((D, n_topics), dtype=np.intc)
+        # topics array
         self.nz_ = nz_ = np.zeros(n_topics, dtype=np.intc)
 
-        self.WS, self.DS = WS, DS = llda.utils.matrix_to_lists(X)
+        self.WS, self.DS = WS, DS = llda.utils.matrix_to_lists(
+            X)  # the kth word in the corpus, the document index for the kth word
         np.testing.assert_equal(N, len(WS))
-        self.ZS = ZS = np.empty_like(self.WS, dtype=np.intc)
+        self.ZS = ZS = np.empty_like(self.WS, dtype=np.intc) # the topic for the word
+        # initialize the distribution for Mdz, Mzw and Az
         for i in range(N):
             w, d = WS[i], DS[i]
             z_new = i % n_topics

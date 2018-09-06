@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import numpy as np
 from numbers import Integral
 
+
 def check_random_state(seed):
     if seed is None:
         return np.random.mtrand._rand

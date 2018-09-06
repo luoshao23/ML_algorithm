@@ -29,7 +29,7 @@ cdef int searchsorted(double* arr, int length, double value) nogil:
     imin = 0
     imax = length
     while imin < imax:
-        imid = imin + ((imax - imin) >> 2)
+        imid = imin + ((imax - imin) >> 1)
         if value > arr[imid]:
             imin = imid + 1
         else:
@@ -41,7 +41,7 @@ def _sample_topics(int[:] WS, int[:] DS, int[:] ZS, int[:, :] nzw, int[:, :] ndz
                    double[:] alpha, double[:] eta, double[:] rands):
     cdef int i, k, w, d, z, z_new
     cdef double r, dist_cum
-    cdef int N = WS.shape[0]
+    cdef int N = WS.shape[0]  # The number of the words
     cdef int n_rand = rands.shape[0]
     cdef int n_topics = nz.shape[0]
     cdef double eta_sum = 0
@@ -49,22 +49,24 @@ def _sample_topics(int[:] WS, int[:] DS, int[:] ZS, int[:, :] nzw, int[:, :] ndz
     if dist_sum is NULL:
         raise MemoryError("Could not allocate memory during sampling.")
     with nogil:
-        for i in range(eta.shape[0]):
+        for i in range(eta.shape[0]): # number of topics
             eta_sum += eta[i]
 
-        for i in range(N):
+        for i in range(N): # number of the words
             w = WS[i]
             d = DS[i]
             z = ZS[i]
 
-            dec(nzw[z, w])
+            dec(nzw[z, w]) # --nzw[z, w]
             dec(ndz[d, z])
-            dec(nz[z])
+            dec(nz[z]) # distribution of topics
 
             dist_cum = 0
             for k in range(n_topics):
                 # eta is a double so cdivision yields a double
                 dist_cum += (nzw[k, w] + eta[w]) / (nz[k] + eta_sum) * (ndz[d, k] + alpha[k])
+                # total formula may be (nzw[k, w] + eta[w]) / (nz[k] + eta_sum) * (ndz[d, k] + alpha[k]) / (ndsum[d] + n_topics * alpha_sum)
+                # while (ndsum[d] + n_topics * alpha_sum) is the same for all the dist_cum, so ignore
                 dist_sum[k] = dist_cum
 
             r = rands[i % n_rand] * dist_cum  # dist_cum == dist_sum[-1]
@@ -101,9 +103,9 @@ cpdef double _loglikelihood(int[:, :] nzw, int[:, :] ndz, int[:] nz, int[:] nd, 
                     ll += lgamma(eta + nzw[k, w]) - lgamma_eta
 
         # calculate log p(z)
+        ll += D * lgamma(alpha * n_topics)
         for d in range(D):
-            ll += (lgamma(alpha * n_topics) -
-                    lgamma(alpha * n_topics + nd[d]))
+            ll -= lgamma(alpha * n_topics + nd[d]))
             for k in range(n_topics):
                 if ndz[d, k] > 0:
                     ll += lgamma(alpha + ndz[d, k]) - lgamma_alpha
