@@ -34,8 +34,26 @@ class LDA(object):
         self._fit(X)
         return self
 
-    def transform(self, X, y=None):
-        pass
+    def transform(self, X, max_iter=20, tol=1e-16):
+        X = np.atleast_2d(X)
+        doc_topic = np.empty((X.shape[0], self.n_topics))
+        WS, DS = llda.utils.matrix_to_lists(X)
+        for d in np.unique(DS):
+            doc_topic[d] = self._transform_single(WS[DS == d], max_iter, tol)
+        return doc_topic
+
+    def _transform_single(self, words, max_iter, tol):
+        PZS = np.zeros((len(words), self.n_topics))
+        for _ in range(max_iter):
+            PZS_new = self.components_[:, words].T  # (topic * new_words).T = new_words * topic = p(w, z)
+            PZS_new *= (PZS.sum(axis=0) - PZS + self.alpha)
+            PZS_new /= np.sum(PZS_new, axis=1, keepdims=True)
+            delta_naive = np.abs(PZS_new - PZS).sum()
+            PZS = PZS_new
+            if delta_naive < tol:
+                break
+        theta_doc = PZS.sum(axis=0) / PZS.sum()
+        return theta_doc
 
     def fit_transform(self, X, y=None):
         if isinstance(X, np.ndarray):
