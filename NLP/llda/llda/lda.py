@@ -47,6 +47,10 @@ class LDA(object):
         for _ in range(max_iter):
             PZS_new = self.components_[:, words].T  # (topic * new_words).T = new_words * topic = p(w, z)
             PZS_new *= (PZS.sum(axis=0) - PZS + self.alpha)
+            # See Equation 11, section 4.1 from [WMSM09] H.M. Wallach, I. Murray,
+            # R. Salakhutdinov, and D. Mimno. Evaluation methods for topic
+            # models. In L. Bottou and M. Littman, editors, Proceedings of the 26th International Con-
+            # ference on Machine Learning(ICML 2009), 2009.
             PZS_new /= np.sum(PZS_new, axis=1, keepdims=True)
             delta_naive = np.abs(PZS_new - PZS).sum()
             PZS = PZS_new
