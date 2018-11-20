@@ -13,8 +13,7 @@ def insert_sort(lst):
                 break
 
 if __name__ == "__main__":
-    # lst = [5, 4, 7, 1, 12, 13, 23, 0, 4]
-    lst = [5, 4, 4]
+    lst = [5, 4, 7, 1, 12, 13, 23, 0, 4]
     print(lst)
     insert_sort(lst)
     print(lst)
