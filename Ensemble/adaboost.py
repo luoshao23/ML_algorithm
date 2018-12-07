@@ -57,10 +57,10 @@ if __name__ == "__main__":
     # Construct dataset
     X1, y1 = make_gaussian_quantiles(cov=2.,
                                     n_samples=200, n_features=5,
-                                    n_classes=2, random_state=1111)
+                                    n_classes=2, random_state=1234)
     X2, y2 = make_gaussian_quantiles(mean=(3, 3, 3, 3, 3), cov=1.5,
                                     n_samples=300, n_features=5,
-                                    n_classes=2, random_state=1111)
+                                    n_classes=2, random_state=1234)
 
     X = np.concatenate((X1, X2))
     y = np.concatenate((2 * y1 - 1, 1 - 2 * y2))
@@ -70,6 +70,6 @@ if __name__ == "__main__":
     ada.fit(X_train, y_train)
     print('My AdaBoost', ada.score(X_test, y_test))
 
-    ac = AC()
+    ac = AC(algorithm="SAMME")
     ac.fit(X_train, y_train)
     print('Sklearn\'s AdaBoost', ac.score(X_test, y_test))
