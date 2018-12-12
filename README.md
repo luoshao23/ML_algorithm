@@ -12,7 +12,6 @@ Machine Learning Algorithm Coding
 + [GUI](GUI)
 + [Graph](Graph)
 + [HMM](HMM)
-+ [LICENSE](LICENSE)
 + [NLP](NLP)
 + [Naive_Bayes](Naive_Bayes)
 + [Neural_Network](Neural_Network)
