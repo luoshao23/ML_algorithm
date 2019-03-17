@@ -1,6 +1,7 @@
 def quick_sort(lst, start, end):
 
-    if start >= end: return
+    if start >= end:
+        return
     mid = lst[start]
     low, high = start, end
 
@@ -11,7 +12,6 @@ def quick_sort(lst, start, end):
         while low < high and lst[low] < mid:
             low += 1
         lst[high] = lst[low]
-
 
     lst[high] = mid
     quick_sort(lst, start, low - 1)
