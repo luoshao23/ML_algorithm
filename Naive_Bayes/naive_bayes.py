@@ -1,10 +1,11 @@
 from abc import abstractclassmethod
 from collections import defaultdict
+import warnings
+
 import numpy as np
 from scipy.special import logsumexp
 from sklearn.utils import check_X_y
 from sklearn.preprocessing import LabelBinarizer
-import warnings
 
 
 class Naive_Bayes(object):
@@ -32,7 +33,7 @@ class Naive_Bayes(object):
                 np.c_[X[:, j], y], return_counts=True, axis=0)
             s = len(set(X[:, j]))
             for l, c in zip(labels, counts):
-                self._matrix[j][tuple(l)] = (c + self._alpha)/ (self._class_counts[self._unique_labels == l[1]][0] + s)
+                self._matrix[j][tuple(l)] = (c + self._alpha) / (self._class_counts[self._unique_labels == l[1]][0] + s)
 
     def predict(self, X, y=None):
         n_samples, n_features = X.shape
@@ -47,7 +48,6 @@ class Naive_Bayes(object):
             res[i] = self._unique_labels[np.argmax(proba)]
 
         return res
-
 
 
 class BaseNB(object):
