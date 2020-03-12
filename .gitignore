@@ -8,3 +8,6 @@ __*/
 *.csv
 *.jpg
 .DS_Store
+
+# Cpp:
+*.out
